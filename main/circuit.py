@@ -60,8 +60,7 @@ class Circuit:
     # ======================================================
 
     def reset(self):
-        """
-        Reset to |00...0>
+        """        Reset to |00...0>
         """
         self.state = QuantumState(self.n)
 
