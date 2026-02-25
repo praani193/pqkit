@@ -26,21 +26,20 @@ class SingleQubitGate(Gate):
         self.matrix = matrix
         self.target = target
 
-    def expand(self, n_qubits):
-        I = np.eye(2, dtype=complex)
-        operators = []
+    def apply(self, statevector):
+        state = statevector.state
+        n = statevector.n_qubits
+        dim = statevector.dim
 
-        for i in range(n_qubits):
-            if i == self.target:
-                operators.append(self.matrix)
-            else:
-                operators.append(I)
+        for i in range(dim):
+            if ((i >> self.target) & 1) == 0:
+                j = i | (1 << self.target)
 
-        U = operators[0]
-        for op in operators[1:]:
-            U = np.kron(U, op)
+                a = state[i]
+                b = state[j]
 
-        return U
+                state[i] = self.matrix[0, 0] * a + self.matrix[0, 1] * b
+                state[j] = self.matrix[1, 0] * a + self.matrix[1, 1] * b
 
 
 # =========================
