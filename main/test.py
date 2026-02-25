@@ -1,11 +1,11 @@
-from main.circuit import Circuit
-from main.gates import H, RZ
+from main.gates import H, CNOT
+from main.circuit import QuantumCircuit
 
-qc = Circuit(int(input("Enter n:")))
+qc = QuantumCircuit(5)
+qc.add_gate(H(0))
+qc.add_gate(CNOT(0, 1))
 
-qc.apply(H(0))
-qc.apply(RZ(1,0))
+final_state = qc.run()
 
-print("Statevector:", qc.get_statevector())
-print("Probabilities:", qc.measure_probabilities())
-print("Counts:", qc.run(shots=1000))
+print(final_state.state)
+print(final_state.measure_probabilities())
