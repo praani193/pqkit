@@ -34,10 +34,8 @@ class SingleQubitGate(Gate):
         for i in range(dim):
             if ((i >> self.target) & 1) == 0:
                 j = i | (1 << self.target)
-
                 a = state[i]
                 b = state[j]
-
                 state[i] = self.matrix[0, 0] * a + self.matrix[0, 1] * b
                 state[j] = self.matrix[1, 0] * a + self.matrix[1, 1] * b
 
