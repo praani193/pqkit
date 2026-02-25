@@ -8,7 +8,6 @@ class StateVector:
         self.dim = 2 ** n_qubits
         self.state = np.zeros(self.dim, dtype=complex)
 
-        # Initialize |000...0>
         self.state[0] = 1.0
 
     def apply_gate(self, gate):
@@ -17,9 +16,6 @@ class StateVector:
     def probabilities(self):
         return np.abs(self.state) ** 2
 
-    # ---------------------------
-    # Measure single qubit
-    # ---------------------------
     def measure_qubit(self, qubit):
         prob_0 = 0
         prob_1 = 0
@@ -37,16 +33,13 @@ class StateVector:
             if ((i >> qubit) & 1) != result:
                 self.state[i] = 0
 
-        # Renormalize
         norm = np.linalg.norm(self.state)
         if norm != 0:
             self.state /= norm
 
         return result
 
-    # ---------------------------
-    # Measure all qubits
-    # ---------------------------
+
     def measure_all(self):
         probs = self.probabilities()
         index = np.random.choice(self.dim, p=probs)
@@ -59,9 +52,7 @@ class StateVector:
 
         return bitstring
 
-    # ---------------------------
-    # Shot-based sampling
-    # ---------------------------
+
     def sample(self, shots=1024):
         probs = self.probabilities()
         outcomes = np.random.choice(self.dim, size=shots, p=probs)

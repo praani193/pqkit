@@ -1,10 +1,6 @@
 import numpy as np
 
 
-# =========================
-# Base Gate Class
-# =========================
-
 class Gate:
     def __init__(self, name="GenericGate"):
         self.name = name
@@ -15,10 +11,6 @@ class Gate:
     def __repr__(self):
         return f"{self.name} Gate"
 
-
-# =========================
-# Single Qubit Gate
-# =========================
 
 class SingleQubitGate(Gate):
     def __init__(self, matrix, target, name="SingleQubitGate"):
@@ -38,11 +30,6 @@ class SingleQubitGate(Gate):
                 b = state[j]
                 state[i] = self.matrix[0, 0] * a + self.matrix[0, 1] * b
                 state[j] = self.matrix[1, 0] * a + self.matrix[1, 1] * b
-
-
-# =========================
-# Multi Qubit Gate (CNOT, CZ, SWAP)
-# =========================
 
 class MultiQubitGate(Gate):
     def __init__(self, name, qubits):
@@ -95,9 +82,6 @@ class MultiQubitGate(Gate):
                 if i < j:
                     state[i], state[j] = state[j], state[i]
 
-# =========================
-# Single Qubit Gate APIs
-# =========================
 
 def X(target):
     matrix = np.array([[0, 1],
@@ -147,9 +131,6 @@ def RZ(theta, target):
     return SingleQubitGate(matrix, target, name="RZ")
 
 
-# =========================
-# Multi Qubit Gate APIs
-# =========================
 
 def CNOT(control, target):
     return MultiQubitGate("CNOT", [control, target])
