@@ -47,74 +47,53 @@ class SingleQubitGate(Gate):
 class MultiQubitGate(Gate):
     def __init__(self, name, qubits):
         super().__init__(name)
-        self.qubits = qubits  # list of involved qubits
+        self.qubits = qubits
 
-    def expand(self, n_qubits):
+    def apply(self, statevector):
         if self.name == "CNOT":
-            return self._expand_cnot(n_qubits)
+            self._apply_cnot(statevector)
         elif self.name == "CZ":
-            return self._expand_cz(n_qubits)
+            self._apply_cz(statevector)
         elif self.name == "SWAP":
-            return self._expand_swap(n_qubits)
+            self._apply_swap(statevector)
         else:
-            raise ValueError(f"Unknown multi-qubit gate: {self.name}")
+            raise ValueError("Unknown multi-qubit gate")
 
-    # -------------------------
-    # CNOT
-    # -------------------------
-
-    def _expand_cnot(self, n):
+    def _apply_cnot(self, statevector):
+        state = statevector.state
+        n = statevector.n_qubits
+        dim = statevector.dim
         control, target = self.qubits
-        dim = 2 ** n
-        matrix = np.zeros((dim, dim), dtype=complex)
 
         for i in range(dim):
-            binary = list(format(i, f'0{n}b'))
+            if ((i >> control) & 1) == 1:
+                j = i ^ (1 << target)
 
-            if binary[control] == '1':
-                binary[target] = '0' if binary[target] == '1' else '1'
+                if i < j:
+                    state[i], state[j] = state[j], state[i]
 
-            j = int("".join(binary), 2)
-            matrix[j, i] = 1
-
-        return matrix
-
-    # -------------------------
-    # CZ
-    # -------------------------
-
-    def _expand_cz(self, n):
+    def _apply_cz(self, statevector):
+        state = statevector.state
+        dim = statevector.dim
         control, target = self.qubits
-        dim = 2 ** n
-        matrix = np.eye(dim, dtype=complex)
 
         for i in range(dim):
-            binary = list(format(i, f'0{n}b'))
+            if ((i >> control) & 1) == 1 and ((i >> target) & 1) == 1:
+                state[i] *= -1
 
-            if binary[control] == '1' and binary[target] == '1':
-                matrix[i, i] = -1
-
-        return matrix
-
-    # -------------------------
-    # SWAP
-    # -------------------------
-
-    def _expand_swap(self, n):
+    def _apply_swap(self, statevector):
+        state = statevector.state
+        dim = statevector.dim
         q1, q2 = self.qubits
-        dim = 2 ** n
-        matrix = np.zeros((dim, dim), dtype=complex)
 
         for i in range(dim):
-            binary = list(format(i, f'0{n}b'))
+            bit1 = (i >> q1) & 1
+            bit2 = (i >> q2) & 1
 
-            binary[q1], binary[q2] = binary[q2], binary[q1]
-
-            j = int("".join(binary), 2)
-            matrix[j, i] = 1
-
-        return matrix
-
+            if bit1 != bit2:
+                j = i ^ ((1 << q1) | (1 << q2))
+                if i < j:
+                    state[i], state[j] = state[j], state[i]
 
 # =========================
 # Single Qubit Gate APIs
