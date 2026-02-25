@@ -1,4 +1,5 @@
-from .state import StateVector
+from main.state import StateVector
+
 
 class QuantumCircuit:
     def __init__(self, n_qubits):
@@ -15,3 +16,7 @@ class QuantumCircuit:
             gate.apply(state)
 
         return state
+
+    def run_shots(self, shots=1024):
+        state = self.run()
+        return state.sample(shots)
