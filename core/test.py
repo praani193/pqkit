@@ -1,5 +1,5 @@
-from main.gates import H, CNOT
-from main.circuit import QuantumCircuit
+from core.gates import H, CNOT
+from core.circuit import QuantumCircuit
 
 qc = QuantumCircuit(2)
 qc.add_gate(H(0))
