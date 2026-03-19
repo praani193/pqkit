@@ -1,28 +1,31 @@
 import numpy as np
 from core.circuit import QuantumCircuit
 from core.gates import RY
-from core.observable import Observable
 
 
+# ---------------- GENERATOR ----------------
 class QuantumGenerator:
 
     def __init__(self):
         self.theta = np.random.randn()
 
-    def sample(self):
+    def sample(self, batch_size=1):
 
-        qc = QuantumCircuit(1)
+        samples = []
 
-        qc.add_gate(RY(self.theta, 0))
+        for _ in range(batch_size):
+            qc = QuantumCircuit(1)
+            qc.add_gate(RY(self.theta, 0))
 
-        state = qc.run()
+            state = qc.run()
 
-        # Probability of |1>
-        prob1 = abs(state.state[1])**2
+            prob1 = abs(state.state[1])**2
+            samples.append(prob1)
 
-        return prob1
+        return np.array(samples)
 
 
+# ---------------- DISCRIMINATOR ----------------
 class ClassicalDiscriminator:
 
     def __init__(self):
@@ -34,52 +37,54 @@ class ClassicalDiscriminator:
         return 1 / (1 + np.exp(-z))
 
 
+# ---------------- QGAN ----------------
 class QGAN:
 
-    def __init__(self, lr=0.1, epochs=200):
-
+    def __init__(self, lr=0.05, epochs=300, batch_size=32):
         self.G = QuantumGenerator()
         self.D = ClassicalDiscriminator()
 
         self.lr = lr
         self.epochs = epochs
+        self.batch_size = batch_size
 
-    def real_data(self):
-        return np.random.normal(0.8, 0.05)
-
-    def train(self):
+    def train(self, real_sampler):
 
         for epoch in range(self.epochs):
 
-            # ----- Train Discriminator -----
-            real = self.real_data()
-            fake = self.G.sample()
+            # ===== Sample Data =====
+            real_batch = real_sampler(self.batch_size)
+            fake_batch = self.G.sample(self.batch_size)
 
-            d_real = self.D.forward(real)
-            d_fake = self.D.forward(fake)
+            # ===== Train Discriminator =====
+            d_real = self.D.forward(real_batch)
+            d_fake = self.D.forward(fake_batch)
 
-            loss_d = -np.log(d_real) - np.log(1 - d_fake)
+            loss_d = -np.mean(np.log(d_real + 1e-8) +
+                             np.log(1 - d_fake + 1e-8))
 
-            grad_w = (d_real - 1)*real + d_fake*fake
-            grad_b = (d_real - 1) + d_fake
+            grad_w = np.mean((d_real - 1)*real_batch + d_fake*fake_batch)
+            grad_b = np.mean((d_real - 1) + d_fake)
 
             self.D.w -= self.lr * grad_w
             self.D.b -= self.lr * grad_b
 
-            # ----- Train Generator -----
-            shift = np.pi/2
+            # ===== Train Generator =====
+            shift = np.pi / 2
 
             self.G.theta += shift
-            fake1 = self.G.sample()
+            fake1 = self.G.sample(self.batch_size)
 
-            self.G.theta -= 2*shift
-            fake2 = self.G.sample()
+            self.G.theta -= 2 * shift
+            fake2 = self.G.sample(self.batch_size)
 
             self.G.theta += shift
 
-            grad_g = (fake1 - fake2)/2 * (-1/(1-d_fake))
+            d_fake = self.D.forward(fake_batch)
+
+            grad_g = np.mean((fake1 - fake2)/2 * (-1/(1 - d_fake + 1e-8)))
 
             self.G.theta -= self.lr * grad_g
 
             if epoch % 20 == 0:
-                print("Epoch", epoch, "D Loss", loss_d)
+                print(f"Epoch {epoch} | D Loss: {loss_d:.4f}")
