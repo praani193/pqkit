@@ -7,15 +7,10 @@ class QuantumCircuit:
         self.n_qubits = n_qubits
         self.gates = []
 
-    # ---------------------------------
-    # ADD GATE
-    # ---------------------------------
     def add_gate(self, gate):
         self.gates.append(gate)
 
-    # ---------------------------------
-    # SINGLE STATE EXECUTION
-    # ---------------------------------
+
     def run(self, initial_state=None):
         """
         Run circuit on single quantum state
@@ -31,16 +26,10 @@ class QuantumCircuit:
 
         return state
 
-    # ---------------------------------
-    # SHOT SAMPLING
-    # ---------------------------------
     def run_shots(self, shots=1024):
         state = self.run()
         return state.sample(shots)
 
-    # ---------------------------------
-    # ⭐ BATCH EXECUTION (UPGRADE 5)
-    # ---------------------------------
     def run_batch(self, batch_size, initial_state=None):
         """
         Run circuit on multiple states simultaneously.
@@ -57,8 +46,5 @@ class QuantumCircuit:
 
         return state
 
-    # ---------------------------------
-    # CLEAR CIRCUIT (ML TRAINING USEFUL)
-    # ---------------------------------
     def clear(self):
         self.gates = []
