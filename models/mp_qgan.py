@@ -34,7 +34,7 @@ class QuantumGenerator:
                 qc = self._multi_circuit()
 
             elif self.mode == "variational":
-                noise = np.random.normal(0, 0.1, size=self.theta.shape)
+                noise = np.random.normal(0, 0.2, size=self.theta.shape)
                 original_theta = self.theta.copy()
 
                 self.theta = self.theta + noise
@@ -112,8 +112,9 @@ class MultiQGAN:
         self.batch_size = batch_size
 
     def split_real(self, real):
-        low = real[real <= 0.5]
-        high = real[real > 0.5]
+        threshold = np.median(real)
+        low = real[real <= threshold]
+        high = real[real > threshold]
 
         if len(low) == 0:
             low = real
@@ -122,12 +123,40 @@ class MultiQGAN:
 
         return low, high
 
+    def compute_metrics(self, d_real, d_fake, threshold=0.5):
+
+        # Ground truth
+        y_true_real = np.ones_like(d_real)
+        y_true_fake = np.zeros_like(d_fake)
+
+        # Predictions
+        y_pred_real = (d_real >= threshold).astype(int)
+        y_pred_fake = (d_fake >= threshold).astype(int)
+
+        # Combine
+        y_true = np.concatenate([y_true_real, y_true_fake])
+        y_pred = np.concatenate([y_pred_real, y_pred_fake])
+
+        # Confusion matrix
+        TP = np.sum((y_true == 1) & (y_pred == 1))
+        TN = np.sum((y_true == 0) & (y_pred == 0))
+        FP = np.sum((y_true == 0) & (y_pred == 1))
+        FN = np.sum((y_true == 1) & (y_pred == 0))
+
+        # Metrics
+        accuracy = (TP + TN) / (TP + TN + FP + FN + 1e-8)
+        precision = TP / (TP + FP + 1e-8)
+        recall = TP / (TP + FN + 1e-8)
+        f1 = 2 * precision * recall / (precision + recall + 1e-8)
+
+        return accuracy, precision, recall, f1
+
     def save_plot(self, real, fake, epoch):
 
         import matplotlib.pyplot as plt
         import os
 
-        os.makedirs("plots", exist_ok=True)
+        os.makedirs("plots2", exist_ok=True)
 
         plt.figure()
 
@@ -139,7 +168,7 @@ class MultiQGAN:
         plt.xlabel("Value")
         plt.ylabel("Density")
 
-        plt.savefig(f"plots/epoch_{epoch:04d}.png")
+        plt.savefig(f"plots2/epoch_{epoch:04d}.png")
         plt.close()
     def train(self, real_sampler):
 
@@ -212,6 +241,14 @@ class MultiQGAN:
                 ])
 
                 self.save_plot(real_plot, fake_plot, epoch)
+                # ===== METRICS =====
+                acc, prec, rec, f1 = self.compute_metrics(d_real, d_fake,0.4)
+
+                print("---------- METRICS ----------")
+                print(f"Accuracy : {acc:.4f}")
+                print(f"Precision: {prec:.4f}")
+                print(f"Recall   : {rec:.4f}")
+                print(f"F1 Score : {f1:.4f}")
 
         # ===== FINAL PLOT (ONLY ONE) =====
         real_samples = real_sampler(1000)
@@ -223,7 +260,7 @@ class MultiQGAN:
         if np.std(fake1) < 0.05:
             self.G1.theta += np.random.randn(*self.G1.theta.shape) * 0.05
 
-        if np.std(fake2) < 0.05:
+        if np.std(fake2) < 0.1:
             self.G2.theta += np.random.randn(*self.G2.theta.shape) * 0.05
         import matplotlib.pyplot as plt
 

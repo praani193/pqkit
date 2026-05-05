@@ -6,7 +6,7 @@ from datasets.gaussian_new import sample_real_data
 
 
 model = MultiQGAN(
-        epochs=501,
+        epochs=601,
         batch_size=64
     )
 
